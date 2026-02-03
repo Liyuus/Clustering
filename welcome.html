@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission Briefing | Cluster Quest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Outfit:wght@300;600;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon: #00f3ff; --error: #ff003c; --glass: rgba(255, 255, 255, 0.05); --border: rgba(255, 255, 255, 0.1); }
+        
+        body { 
+            background: black;
+            color: white; font-family: 'Outfit', sans-serif; height: 100vh; overflow: hidden;
+            perspective: 1200px;
+        }
+
+        #bg-image {
+            position: fixed; inset: 0;
+            background: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat;
+            z-index: -2;
+            animation: bgPulse 30s infinite alternate ease-in-out;
+            filter: brightness(0.3) blur(3px);
+        }
+        @keyframes bgPulse { from { transform: scale(1); } to { transform: scale(1.2); } }
+
+        .scanline {
+            width: 100%; height: 10px; background: linear-gradient(to bottom, transparent, rgba(0, 243, 255, 0.05), transparent);
+            position: fixed; top: 0; left: 0; pointer-events: none; z-index: 100;
+            animation: scan 6s linear infinite;
+        }
+        @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+
+        .zenith-card { 
+            background: var(--glass); backdrop-filter: blur(25px); 
+            border: 1px solid var(--border); border-radius: 24px;
+        }
+
+        .floating { animation: cardFloat 5s infinite ease-in-out; }
+        @keyframes cardFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        /* Warp Jump Sequence */
+        .warp-container { transition: transform 4s cubic-bezier(0.7, 0, 0.3, 1), filter 3s ease, opacity 3s ease; }
+        .warping { transform: translateZ(2000px) scale(5); filter: brightness(10) blur(40px); opacity: 0; }
+
+        .star-layer {
+            position: fixed; inset: 0; pointer-events: none; opacity: 0; z-index: 50;
+            background: radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+                        radial-gradient(2px 2px at 100px 150px, #fff, rgba(0,0,0,0));
+            background-size: 300px 300px;
+        }
+        .stars-active { opacity: 1; animation: starsMove 0.8s linear infinite; }
+        @keyframes starsMove { from { transform: scale(0.5); opacity: 0; } to { transform: scale(4); opacity: 1; } }
+
+        .btn-launch { background: var(--neon); box-shadow: 0 0 25px rgba(0, 243, 255, 0.5); transition: all 0.3s ease; }
+        .btn-launch:hover { transform: scale(1.05); background: white; }
+
+        .btn-ghost { border: 1px solid var(--border); background: rgba(255,255,255,0.02); transition: all 0.3s ease; }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: var(--neon); color: var(--neon); }
+
+        /* Modal Styling */
+        #protocol-modal {
+            display: none;
+            position: fixed; inset: 0; z-index: 500;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(15px);
+            align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.4s ease;
+        }
+        #protocol-modal.active { display: flex; opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="bg-image"></div>
+    <div class="scanline"></div>
+    <div id="star-field" class="star-layer"></div>
+
+    <div id="protocol-modal" onclick="toggleModal(false)">
+        <div class="zenith-card p-8 max-w-2xl w-full mx-6 border-cyan-400/30" onclick="event.stopPropagation()">
+            <h2 class="font-['Orbitron'] text-2xl text-cyan-400 mb-6 italic tracking-widest text-center">PROTOCOL MATRIX</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="space-y-3">
+                    <h4 class="text-[10px] font-black text-cyan-400 tracking-[0.2em] mb-2 uppercase">XP Merits</h4>
+                    <div class="bg-white/5 p-3 rounded-lg border-l-2 border-cyan-400 text-xs">
+                        <p class="font-bold">Active Participation</p>
+                        <p class="opacity-50 text-[10px]">Class discussion & proactive engagement.</p>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-lg border-l-2 border-cyan-400 text-xs">
+                        <p class="font-bold">Debrief Group Victory</p>
+                        <p class="opacity-50 text-[10px]">Winning activities in temporary mixed teams.</p>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-lg border-l-2 border-cyan-400 text-xs">
+                        <p class="font-bold">Trainer's Discretion</p>
+                        <p class="opacity-50 text-[10px]">Points awarded for exceptional performance.</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h4 class="text-[10px] font-black text-red-500 tracking-[0.2em] mb-2 uppercase">XP Demerits</h4>
+                    <div class="bg-white/5 p-3 rounded-lg border-l-2 border-red-500 text-xs">
+                        <p class="font-bold">Time Violations</p>
+                        <p class="opacity-50 text-[10px]">Tardiness, lates, or extended breaks.</p>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-lg border-l-2 border-red-500 text-xs">
+                        <p class="font-bold">Engagement Breach</p>
+                        <p class="opacity-50 text-[10px]">Inactivity or misconduct during training.</p>
+                    </div>
+                    <div class="bg-white/5 p-3 rounded-lg border-l-2 border-red-500 text-xs">
+                        <p class="font-bold">Absenteeism</p>
+                        <p class="opacity-50 text-[10px]">Points deducted for unexcused absences.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="toggleModal(false)" class="w-full py-4 rounded-full bg-white/10 text-[10px] font-black tracking-widest uppercase hover:bg-white/20 transition-all">Close Encryption</button>
+        </div>
+    </div>
+
+    <main id="main-content" class="warp-container h-full flex flex-col items-center justify-center px-6">
+        
+        <header class="text-center mb-16">
+            <h1 class="font-['Orbitron'] text-6xl md:text-8xl font-black tracking-tighter mb-4 italic">
+                CLUSTER <span class="text-cyan-400" style="text-shadow: 0 0 30px #00f3ff;">QUEST</span>
+            </h1>
+            <p class="text-[10px] tracking-[0.5em] text-cyan-400/60 uppercase font-black">Tactical Training Expedition</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full mb-12">
+            <div class="zenith-card p-10 floating text-center">
+                <h3 class="font-['Orbitron'] text-cyan-400 text-lg mb-2">CLUSTER ASSIGNMENT</h3>
+                <p class="text-xs opacity-50 mb-4">Balanced distribution with XP multipliers.</p>
+                <button onclick="toggleModal(true)" class="btn-ghost px-6 py-2 rounded-full text-[9px] font-black tracking-widest uppercase">View Protocol Matrix</button>
+            </div>
+
+            <div class="zenith-card p-10 floating text-center" style="animation-delay: 1s;">
+                <h3 class="font-['Orbitron'] text-cyan-400 text-lg mb-2">DEBRIEF MODE</h3>
+                <p class="text-xs opacity-50 mb-4">Cross-cluster activities and XP extraction.</p>
+                <div class="text-[9px] font-bold text-cyan-400/30 uppercase tracking-[0.2em]">Operational Status: Ready</div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button onclick="warpSpeed()" class="btn-launch text-black font-black px-20 py-8 rounded-full text-sm tracking-[0.5em] uppercase active:scale-95">
+                ESTABLISH NEURAL LINK
+            </button>
+        </div>
+
+    </main>
+
+    <div id="flash" class="fixed inset-0 bg-white opacity-0 pointer-events-none z-[1000] transition-opacity duration-1000"></div>
+
+    <script>
+        const sfx = {
+            hover: new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3'),
+            charge: new Audio('https://assets.mixkit.co/active_storage/sfx/158/158-preview.mp3'),
+            jump: new Audio('https://assets.mixkit.co/active_storage/sfx/2633/2633-preview.mp3'),
+            modal: new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3')
+        };
+
+        function toggleModal(show) {
+            const modal = document.getElementById('protocol-modal');
+            if(show) {
+                modal.classList.add('active');
+                sfx.modal.play();
+            } else {
+                modal.classList.remove('active');
+            }
+        }
+
+        function warpSpeed() {
+            const main = document.getElementById('main-content');
+            const stars = document.getElementById('star-field');
+            const flash = document.getElementById('flash');
+            
+            sfx.charge.play();
+            main.style.filter = "hue-rotate(90deg) brightness(1.5) blur(2px)";
+            
+            setTimeout(() => {
+                stars.classList.add('stars-active');
+                main.classList.add('warping');
+                sfx.jump.play();
+            }, 1500);
+
+            setTimeout(() => flash.style.opacity = "1", 3500);
+            setTimeout(() => window.location.href = 'Index.html', 4500);
+        }
+
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                sfx.hover.currentTime = 0;
+                sfx.hover.play().catch(()=>{});
+            });
+        });
+    </script>
+</body>
+</html>
